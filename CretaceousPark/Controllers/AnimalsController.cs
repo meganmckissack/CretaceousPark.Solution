@@ -40,18 +40,28 @@ namespace CretaceousPark.Controllers
     }
 
     // GET: api/Animals/5
-    [HttpGet("{id}")]
-    public async Task<ActionResult<Animal>> GetAnimal(int id)
+    [HttpGet]
+    public async Task<ActionResult<IEnumerable<Animal>>> Get(string species, string name, int minimumAge)
     {
-      var animal = await _db.Animals.FindAsync(id);
+      IQueryable<Animal> query = _db.Animals.AsQueryable();
 
-      if (animal == null)
+      if (species != null)
       {
-        return NotFound();
+        query = query.Where(entry => entry.Species == species);
       }
 
-      return animal;
-    }   
+      if (name != null)
+      {
+        query = query.Where(entry => entry.Name == name);
+      }
+
+      if (minimumAge > 0)
+      {
+        query = query.Where(entry => entry.Age >= minimumAge);
+      }
+      
+      return await query.ToListAsync();
+    }
 
     // PUT: api/Animals/5
     [HttpPut("{id}")]  //determine which animal will be updated based on the id parameter in the URL
