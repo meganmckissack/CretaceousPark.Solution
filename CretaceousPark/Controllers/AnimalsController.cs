@@ -20,51 +20,47 @@ namespace CretaceousPark.Controllers
       _db = db;
     }
 
-    // GET api/animals
+    // GET: api/Animals
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<Animal>>> Get()
+    public async Task<ActionResult<IEnumerable<Animal>>> Get(string species, string name)
     {
-      return await _db.Animals.ToListAsync();
-    }
-
-    // POST route utilizes the function CreatedAtAction. This is so that it can end up returning the Animal object to the user, as well as update the status code to 201, for "Created", rather than the default 200 OK.
-    // POST api/animals
-    [HttpPost]
-    public async Task<ActionResult<Animal>> Post(Animal animal)
-    {
-      _db.Animals.Add(animal);
-      await _db.SaveChangesAsync();
-
-      // first argument affects the value of the Location in the response header -- changes it to the result of our GetAnimal route. Upon creation, the result contains a link to where that newly-created object can be found with a GET request
-      return CreatedAtAction(nameof(GetAnimal), new { id = animal.AnimalId }, animal);
-    }
-
-    // GET: api/Animals/5
-    [HttpGet]
-    public async Task<ActionResult<IEnumerable<Animal>>> Get(string species, string name, int minimumAge)
-    {
-      IQueryable<Animal> query = _db.Animals.AsQueryable();
+      var query = _db.Animals.AsQueryable();
 
       if (species != null)
       {
         query = query.Where(entry => entry.Species == species);
       }
 
+      // if (gender != null)
+      // {
+      //   query = query.Where(entry => entry.Gender == gender);
+      // }    
+
       if (name != null)
       {
         query = query.Where(entry => entry.Name == name);
-      }
+      }      
 
-      if (minimumAge > 0)
-      {
-        query = query.Where(entry => entry.Age >= minimumAge);
-      }
-      
       return await query.ToListAsync();
     }
 
+    // GET: api/Animals/5
+    [HttpGet("{id}")]
+    public async Task<ActionResult<Animal>> GetAnimal(int id)
+    {
+        var animal = await _db.Animals.FindAsync(id);
+
+        if (animal == null)
+        {
+            return NotFound();
+        }
+
+        return animal;
+    }
+
     // PUT: api/Animals/5
-    [HttpPut("{id}")]  //determine which animal will be updated based on the id parameter in the URL
+    // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
+    [HttpPut("{id}")]
     public async Task<IActionResult> Put(int id, Animal animal)
     {
       if (id != animal.AnimalId)
@@ -92,9 +88,15 @@ namespace CretaceousPark.Controllers
 
       return NoContent();
     }
-    private bool AnimalExists(int id)
+
+    // POST: api/Animals
+    [HttpPost]
+    public async Task<ActionResult<Animal>> Post(Animal animal)
     {
-      return _db.Animals.Any(e => e.AnimalId == id);
+      _db.Animals.Add(animal);
+      await _db.SaveChangesAsync();
+
+      return CreatedAtAction(nameof(GetAnimal), new { id = animal.AnimalId }, animal);
     }
 
     // DELETE: api/Animals/5
@@ -111,6 +113,11 @@ namespace CretaceousPark.Controllers
       await _db.SaveChangesAsync();
 
       return NoContent();
+    }
+
+    private bool AnimalExists(int id)
+    {
+      return _db.Animals.Any(e => e.AnimalId == id);
     }
   }
 }
